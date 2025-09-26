@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 # --- Configuration ---
-VIDEO_SOURCE        = "rtsp://192.168.1.110/live.sdp"  # or 0 for webcam
+VIDEO_SOURCE        = 0  # or 0 for webcam
 DISPLAY_WIDTH       = 800                  # width of display window
 NUM_ROWS            = 5                    # number of horizontal lines to sample
 COLOR_THRESH        = 220.0                 # color distance threshold
