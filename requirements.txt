@@ -7,3 +7,6 @@ numpy>=1.24.0
 
 # GUI and image display for tkinter integration
 Pillow>=9.0.0
+
+# Note: If you get "No module named tkinter" error:
+# sudo apt-get install python3-tk
