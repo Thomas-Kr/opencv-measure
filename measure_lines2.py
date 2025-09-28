@@ -4,7 +4,6 @@ import time
 
 # --- Configuration ---
 VIDEO_SOURCE        = 0  # or 0 for webcam
-DISPLAY_WIDTH       = 800                  # width of display window
 NUM_ROWS            = 5                    # number of horizontal lines to sample
 COLOR_THRESH        = 220.0                 # color distance threshold
 TARGET_FPS          = 20                   # display/update rate in Hz
@@ -129,8 +128,9 @@ def main():
         cv2.putText(vis, status, (10,90),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, col, 2)
 
-        show = cv2.resize(vis, (DISPLAY_WIDTH, int(h * DISPLAY_WIDTH / w)))
-        cv2.imshow("Shell Width Sampling", show)
+        cv2.namedWindow("Shell Width Sampling", cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty("Shell Width Sampling", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        cv2.imshow("Shell Width Sampling", vis)
         if cv2.waitKey(int(1000 / TARGET_FPS)) & 0xFF == 27:
             break
 
