@@ -128,9 +128,32 @@ def main():
         cv2.putText(vis, status, (10,90),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, col, 2)
 
+        # Create window and set it to fullscreen (works better on X11/Raspberry Pi)
         cv2.namedWindow("Shell Width Sampling", cv2.WINDOW_NORMAL)
         cv2.setWindowProperty("Shell Width Sampling", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-        cv2.imshow("Shell Width Sampling", vis)
+        
+        # Get screen size and scale image to fit while maintaining aspect ratio
+        screen_width = cv2.getWindowImageRect("Shell Width Sampling")[2] or 1920
+        screen_height = cv2.getWindowImageRect("Shell Width Sampling")[3] or 1080
+        
+        # Calculate scaling factor to fit screen while preserving aspect ratio
+        scale_x = screen_width / w
+        scale_y = screen_height / h
+        scale = min(scale_x, scale_y)  # Use smaller scale to fit entirely
+        
+        new_w = int(w * scale)
+        new_h = int(h * scale)
+        
+        # Resize maintaining aspect ratio
+        show = cv2.resize(vis, (new_w, new_h))
+        
+        # Create black background and center the image
+        full_screen = np.zeros((screen_height, screen_width, 3), dtype=np.uint8)
+        y_offset = (screen_height - new_h) // 2
+        x_offset = (screen_width - new_w) // 2
+        full_screen[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = show
+        
+        cv2.imshow("Shell Width Sampling", full_screen)
         if cv2.waitKey(int(1000 / TARGET_FPS)) & 0xFF == 27:
             break
 
