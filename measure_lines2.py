@@ -128,32 +128,48 @@ def main():
         cv2.putText(vis, status, (10,90),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, col, 2)
 
-        # Create window and set it to fullscreen (works better on X11/Raspberry Pi)
-        cv2.namedWindow("Shell Width Sampling", cv2.WINDOW_NORMAL)
-        cv2.setWindowProperty("Shell Width Sampling", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        # Simple approach for bare X server (no window manager)
+        # Get screen size - fallback to common Raspberry Pi resolutions
+        try:
+            import subprocess
+            result = subprocess.run(['xrandr'], capture_output=True, text=True)
+            lines = result.stdout.split('\n')
+            for line in lines:
+                if '*' in line and '+' in line:  # current resolution line
+                    parts = line.split()
+                    resolution = parts[0]
+                    screen_width, screen_height = map(int, resolution.split('x'))
+                    break
+            else:
+                # Fallback to common Raspberry Pi resolution
+                screen_width, screen_height = 1920, 1080
+        except:
+            # Fallback resolution
+            screen_width, screen_height = 1920, 1080
         
-        # Get screen size and scale image to fit while maintaining aspect ratio
-        screen_width = cv2.getWindowImageRect("Shell Width Sampling")[2] or 1920
-        screen_height = cv2.getWindowImageRect("Shell Width Sampling")[3] or 1080
-        
-        # Calculate scaling factor to fit screen while preserving aspect ratio
+        # Calculate scaling to fill screen while maintaining aspect ratio
         scale_x = screen_width / w
         scale_y = screen_height / h
-        scale = min(scale_x, scale_y)  # Use smaller scale to fit entirely
+        scale = min(scale_x, scale_y)
         
         new_w = int(w * scale)
         new_h = int(h * scale)
         
-        # Resize maintaining aspect ratio
+        # Resize and center
         show = cv2.resize(vis, (new_w, new_h))
         
-        # Create black background and center the image
+        # Create full screen black canvas
         full_screen = np.zeros((screen_height, screen_width, 3), dtype=np.uint8)
         y_offset = (screen_height - new_h) // 2
         x_offset = (screen_width - new_w) // 2
         full_screen[y_offset:y_offset+new_h, x_offset:x_offset+new_w] = show
         
+        # Create window without decorations and position it at 0,0
+        cv2.namedWindow("Shell Width Sampling", cv2.WINDOW_NORMAL)
+        cv2.resizeWindow("Shell Width Sampling", screen_width, screen_height)
+        cv2.moveWindow("Shell Width Sampling", 0, 0)
         cv2.imshow("Shell Width Sampling", full_screen)
+        
         if cv2.waitKey(int(1000 / TARGET_FPS)) & 0xFF == 27:
             break
 
