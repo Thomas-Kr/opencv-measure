@@ -9,6 +9,7 @@ import json
 import os
 import datetime
 import subprocess
+from ui_config import UIConfig
 
 class MeasureLinesIntegratedGUI:
     def __init__(self):
@@ -53,6 +54,9 @@ class MeasureLinesIntegratedGUI:
         # Current input field
         self.current_entry = None
         self.current_value = ""
+        
+        # Current active tab
+        self.current_tab = "settings"  # "settings" or "system_info"
         
         # Initialize entries dictionary
         self.entries = {}
@@ -116,7 +120,7 @@ class MeasureLinesIntegratedGUI:
         main_frame.pack(fill='both', expand=True)
         
         # Top panel with controls and datetime
-        top_panel = Frame(main_frame, bg='darkblue', height=self.p_to_pixels_y(7))
+        top_panel = Frame(main_frame, bg='darkblue', height=self.p_to_pixels_y(UIConfig.TOP_PANEL_HEIGHT))
         top_panel.pack(fill='x', pady=(0, self.p_to_pixels_y(0.7)))
         top_panel.pack_propagate(False)
         
@@ -160,7 +164,7 @@ class MeasureLinesIntegratedGUI:
         
         # Date and Time (doubled font size)
         self.datetime_label = Label(right_top_frame, text="Loading...", 
-                                   font=('Arial', self.p_to_pixels_y(3.9), 'bold'), bg='darkblue', fg='white')
+                                   font=('Arial', self.p_to_pixels_y(1.6), 'bold'), bg='darkblue', fg='white')
         self.datetime_label.pack()
         
         # Start datetime update
@@ -170,7 +174,7 @@ class MeasureLinesIntegratedGUI:
         content_frame = Frame(main_frame, bg='black')
         content_frame.pack(fill='both', expand=True)
         
-        # Left side - Video display (takes most of the space)
+        # Left side - Video display (takes most of the space - about 70%)
         video_frame = Frame(content_frame, bg='black')
         video_frame.pack(side='left', fill='both', expand=True)
         
@@ -178,18 +182,40 @@ class MeasureLinesIntegratedGUI:
         self.video_canvas = Canvas(video_frame, bg='black')
         self.video_canvas.pack(fill='both', expand=True)
         
-        # Right side - Controls (exactly 50% of screen width)
-        control_frame = Frame(content_frame, bg='darkgray')
-        control_frame.pack(side='right', fill='both', expand=True, padx=self.p_to_pixels_x(0.2), pady=self.p_to_pixels_y(0.3))
+        # Right side - Controls (fixed width - about 30% of screen width)
+        control_frame = Frame(content_frame, bg='darkgray', width=self.p_to_pixels_x(UIConfig.RIGHT_PANEL_WIDTH))
+        control_frame.pack(side='right', fill='y', padx=self.p_to_pixels_x(0.2), pady=self.p_to_pixels_y(0.3))
+        control_frame.pack_propagate(False)  # Prevent frame from shrinking
         
-        # Settings section (doubled font size)
-        settings_label = Label(control_frame, text="Settings", 
-                              font=('Arial', self.p_to_pixels_y(3.9), 'bold'), bg='darkgray')
-        settings_label.pack(pady=(0, self.p_to_pixels_y(1.4)))
+        # Tab buttons frame
+        tab_frame = Frame(control_frame, bg='darkgray')
+        tab_frame.pack(fill='x', pady=(0, self.p_to_pixels_y(1)))
         
-        # Settings frame with scrolling (optimized height to fit numpad)
-        settings_canvas = Canvas(control_frame, bg='lightgray', height=self.p_to_pixels_y(42))
-        settings_canvas.pack(fill='x', pady=(0, self.p_to_pixels_y(0.7)))
+        # Tab buttons
+        self.settings_tab_btn = Button(tab_frame, text="Settings", 
+                                      width=UIConfig.TAB_BUTTON_WIDTH, height=UIConfig.TAB_BUTTON_HEIGHT,
+                                      font=('Arial', self.p_to_pixels_y(UIConfig.TAB_BUTTON_FONT_SIZE), 'bold'), 
+                                      bg='lightblue', fg='black',
+                                      command=lambda: self.switch_tab("settings"))
+        self.settings_tab_btn.pack(side='left', padx=self.p_to_pixels_x(0.5))
+        
+        self.system_info_tab_btn = Button(tab_frame, text="System Info", 
+                                         width=UIConfig.TAB_BUTTON_WIDTH, height=UIConfig.TAB_BUTTON_HEIGHT,
+                                         font=('Arial', self.p_to_pixels_y(UIConfig.TAB_BUTTON_FONT_SIZE), 'bold'), 
+                                         bg='white', fg='black',
+                                         command=lambda: self.switch_tab("system_info"))
+        self.system_info_tab_btn.pack(side='left', padx=self.p_to_pixels_x(0.5))
+        
+        # Content area for tabs
+        self.tab_content_frame = Frame(control_frame, bg='darkgray')
+        self.tab_content_frame.pack(fill='both', expand=True)
+        
+        # Settings content frame
+        self.settings_content = Frame(self.tab_content_frame, bg='darkgray')
+        
+        # Settings section with optimized height
+        settings_canvas = Canvas(self.settings_content, bg='lightgray', height=self.p_to_pixels_y(UIConfig.SETTINGS_AREA_HEIGHT))
+        settings_canvas.pack(fill='x', pady=(0, self.p_to_pixels_y(0.5)))
         
         settings_scroll_frame = Frame(settings_canvas, bg='lightgray')
         settings_canvas.create_window((0, 0), window=settings_scroll_frame, anchor='nw')
@@ -202,21 +228,87 @@ class MeasureLinesIntegratedGUI:
         settings_scroll_frame.update_idletasks()
         settings_canvas.configure(scrollregion=settings_canvas.bbox('all'))
         
-        # Numpad with integrated controls
-        self.setup_numpad(control_frame)
+        # Numpad frame (in settings content)
+        self.setup_numpad(self.settings_content)
+        
+        # System Info content frame
+        self.system_info_content = Frame(self.tab_content_frame, bg='darkgray')
+        self.setup_system_info_tab(self.system_info_content)
+        
+        # Show settings tab by default
+        self.switch_tab("settings")
         
         # Bind ESC key for exit
         self.root.bind('<Escape>', lambda e: self.exit_app())
+    
+    def switch_tab(self, tab_name):
+        """Switch between Settings and System Info tabs"""
+        self.current_tab = tab_name
+        
+        # Hide all content frames
+        self.settings_content.pack_forget()
+        self.system_info_content.pack_forget()
+        
+        # Update tab button colors
+        if tab_name == "settings":
+            self.settings_tab_btn.config(bg='lightblue', fg='black')
+            self.system_info_tab_btn.config(bg='white', fg='black')
+            self.settings_content.pack(fill='both', expand=True)
+        elif tab_name == "system_info":
+            self.settings_tab_btn.config(bg='white', fg='black')
+            self.system_info_tab_btn.config(bg='lightblue', fg='black')
+            self.system_info_content.pack(fill='both', expand=True)
+    
+    def setup_system_info_tab(self, parent):
+        """Create system information tab content"""
+        # Title
+        title_label = Label(parent, text="System Information", 
+                           font=('Arial', self.p_to_pixels_y(3.5), 'bold'), 
+                           bg='darkgray', fg='white')
+        title_label.pack(pady=(self.p_to_pixels_y(2), self.p_to_pixels_y(1.5)))
+        
+        # System info container with better layout
+        info_container = Frame(parent, bg='darkslategray')
+        info_container.pack(fill='both', expand=True, padx=self.p_to_pixels_x(1), pady=self.p_to_pixels_y(1))
+        
+        # CPU Temperature
+        self.cpu_temp_label = Label(info_container, text="CPU Temp: N/A", 
+                                   font=('Arial', self.p_to_pixels_y(2.2)), 
+                                   bg='darkslategray', fg='lightgreen')
+        self.cpu_temp_label.pack(anchor='w', padx=self.p_to_pixels_x(1), pady=self.p_to_pixels_y(0.5))
+        
+        # CPU Usage
+        self.cpu_usage_label = Label(info_container, text="CPU Usage: N/A", 
+                                    font=('Arial', self.p_to_pixels_y(2.2)), 
+                                    bg='darkslategray', fg='lightblue')
+        self.cpu_usage_label.pack(anchor='w', padx=self.p_to_pixels_x(1), pady=self.p_to_pixels_y(0.5))
+        
+        # Memory Usage
+        self.memory_label = Label(info_container, text="Memory: N/A", 
+                                 font=('Arial', self.p_to_pixels_y(2.2)), 
+                                 bg='darkslategray', fg='lightyellow')
+        self.memory_label.pack(anchor='w', padx=self.p_to_pixels_x(1), pady=self.p_to_pixels_y(0.5))
+        
+        # Disk Usage
+        self.disk_label = Label(info_container, text="Disk: N/A", 
+                               font=('Arial', self.p_to_pixels_y(2.2)), 
+                               bg='darkslategray', fg='lightcoral')
+        self.disk_label.pack(anchor='w', padx=self.p_to_pixels_x(1), pady=self.p_to_pixels_y(0.5))
+        
+        # Uptime (time since last reboot)
+        self.uptime_label = Label(info_container, text="Uptime (since boot): N/A", 
+                                 font=('Arial', self.p_to_pixels_y(2.2)), 
+                                 bg='darkslategray', fg='lightgray')
+        self.uptime_label.pack(anchor='w', padx=self.p_to_pixels_x(1), pady=self.p_to_pixels_y(0.5))
+        
+        # Start system monitoring
+        self.update_system_info()
         
     def setup_config_entries(self, parent):
         """Create entry boxes for configuration values"""
-        # Main horizontal container
-        main_container = Frame(parent, bg='lightgray')
-        main_container.pack(fill='both', expand=True)
-        
-        # Left side - Entry boxes
-        entries_frame = Frame(main_container, bg='lightgray')
-        entries_frame.pack(side='left', fill='both', padx=self.p_to_pixels_x(0.3))
+        # Entry boxes container
+        entries_frame = Frame(parent, bg='lightgray')
+        entries_frame.pack(fill='both', expand=True, padx=self.p_to_pixels_x(0.3))
         
         for i, (key, value) in enumerate(self.config.items()):
             # Frame for each setting
@@ -224,12 +316,13 @@ class MeasureLinesIntegratedGUI:
             setting_frame.pack(fill='x')
             
             # Label (optimized width and font size for balanced layout)
-            label = Label(setting_frame, text=f"{key}:", width=25, anchor='w',
-                         bg='lightgray', font=('Arial', self.p_to_pixels_y(2.2)))
+            label = Label(setting_frame, text=f"{key}:", width=UIConfig.ENTRY_LABEL_WIDTH, anchor='w',
+                         bg='lightgray', font=('Arial', self.p_to_pixels_y(UIConfig.ENTRY_FONT_SIZE)))
             label.pack(side='left')
             
             # Entry (optimized width and font size for balanced layout) with character limit
-            entry = Entry(setting_frame, font=('Arial', self.p_to_pixels_y(2.2)), width=18)
+            entry = Entry(setting_frame, font=('Arial', self.p_to_pixels_y(UIConfig.ENTRY_FONT_SIZE)), 
+                         width=UIConfig.ENTRY_FIELD_WIDTH)
             entry.insert(0, str(value))  # Insert value while enabled
             entry.config(state='disabled')  # Then disable
             entry.bind('<Button-1>', lambda e, k=key: self.select_entry(k))
@@ -242,67 +335,22 @@ class MeasureLinesIntegratedGUI:
         # Error message display (below entry boxes)
         self.error_display_label = Label(entries_frame, text="", 
                                          font=('Arial', self.p_to_pixels_y(1.8)), bg='lightgray', fg='red', 
-                                         wraplength=self.p_to_pixels_x(30))
+                                         wraplength=self.p_to_pixels_x(30), anchor='w', justify='left')
         self.error_display_label.pack(fill='x', pady=(self.p_to_pixels_y(1), 0))
-        
-        # Right side - System information
-        self.setup_system_info(main_container)
-    
-    def setup_system_info(self, parent):
-        """Create system information panel"""
-        # System info frame with fixed width (smaller)
-        system_frame = Frame(parent, bg='darkslategray', width=self.p_to_pixels_x(20))
-        system_frame.pack(side='right', fill='y', padx=(self.p_to_pixels_x(1), 0))
-        system_frame.pack_propagate(False)  # Prevent frame from shrinking/expanding
-        
-        # Title
-        title_label = Label(system_frame, text="System Info", 
-                           font=('Arial', self.p_to_pixels_y(2.0), 'bold'), 
-                           bg='darkslategray', fg='white')
-        title_label.pack(pady=(self.p_to_pixels_y(0.5), self.p_to_pixels_y(0.3)))
-        
-        # CPU Temperature
-        self.cpu_temp_label = Label(system_frame, text="CPU Temp: --°C", 
-                                   font=('Arial', self.p_to_pixels_y(1.4)), 
-                                   bg='darkslategray', fg='lightgreen')
-        self.cpu_temp_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
-        
-        # CPU Usage
-        self.cpu_usage_label = Label(system_frame, text="CPU Usage: --%", 
-                                    font=('Arial', self.p_to_pixels_y(1.4)), 
-                                    bg='darkslategray', fg='lightblue')
-        self.cpu_usage_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
-        
-        # Memory Usage
-        self.memory_label = Label(system_frame, text="Memory: --% (--/-- GB)", 
-                                 font=('Arial', self.p_to_pixels_y(1.4)), 
-                                 bg='darkslategray', fg='lightyellow')
-        self.memory_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
-        
-        # Disk Usage
-        self.disk_label = Label(system_frame, text="Disk: --% (-- GB free)", 
-                               font=('Arial', self.p_to_pixels_y(1.4)), 
-                               bg='darkslategray', fg='lightcoral')
-        self.disk_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
-        
-        # Uptime (time since last reboot)
-        self.uptime_label = Label(system_frame, text="Uptime (since boot): --", 
-                                 font=('Arial', self.p_to_pixels_y(1.4)), 
-                                 bg='darkslategray', fg='lightgray')
-        self.uptime_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
-        
-        # Start system monitoring
-        self.update_system_info()
     
     def setup_numpad(self, parent):
-        """Create compact numpad with controls on the right"""
-        # Main horizontal container for numpad and controls
-        numpad_container = Frame(parent, bg='darkgray')
-        numpad_container.pack(fill='x', pady=self.p_to_pixels_y(1.4))
+        """Create compact numpad with controls below it"""
+        # Main container for numpad and controls
+        numpad_main_container = Frame(parent, bg='darkgray')
+        numpad_main_container.pack(fill='both', expand=True, pady=self.p_to_pixels_y(UIConfig.MAIN_CONTAINER_PADY))
         
-        # Left side - Numpad buttons
+        # Numpad container (centered)
+        numpad_container = Frame(numpad_main_container, bg='darkgray')
+        numpad_container.pack(pady=(0, self.p_to_pixels_y(UIConfig.NUMPAD_CONTAINER_PADY)))
+        
+        # Numpad buttons
         numpad_frame = Frame(numpad_container, bg='darkgray')
-        numpad_frame.pack(side='left', padx=self.p_to_pixels_x(0.5))
+        numpad_frame.pack()
         
         # Number buttons (larger for touch)
         buttons = [
@@ -318,50 +366,53 @@ class MeasureLinesIntegratedGUI:
             
             for btn_text in row:
                 if btn_text == 'C':
-                    btn = Button(button_row, text=btn_text, width=7, height=2,
-                                font=('Arial', self.p_to_pixels_y(2.2), 'bold'), bg='orange',
-                                command=self.clear_input)
+                    btn = Button(button_row, text=btn_text, 
+                                width=UIConfig.NUMPAD_BUTTON_WIDTH, height=UIConfig.NUMPAD_BUTTON_HEIGHT,
+                                font=('Arial', self.p_to_pixels_y(UIConfig.NUMPAD_BUTTON_FONT_SIZE), 'bold'), 
+                                bg='orange', command=self.clear_input)
                 else:
-                    btn = Button(button_row, text=btn_text, width=7, height=2,
-                                font=('Arial', self.p_to_pixels_y(2.2), 'bold'), bg='lightblue',
-                                command=lambda t=btn_text: self.numpad_input(t))
-                btn.pack(side='left', padx=self.p_to_pixels_x(0.1), pady=self.p_to_pixels_y(0.14))
+                    btn = Button(button_row, text=btn_text, 
+                                width=UIConfig.NUMPAD_BUTTON_WIDTH, height=UIConfig.NUMPAD_BUTTON_HEIGHT,
+                                font=('Arial', self.p_to_pixels_y(UIConfig.NUMPAD_BUTTON_FONT_SIZE), 'bold'), 
+                                bg='lightblue', command=lambda t=btn_text: self.numpad_input(t))
+                btn.pack(side='left', 
+                        padx=self.p_to_pixels_x(UIConfig.NUMPAD_BUTTON_PADX), 
+                        pady=self.p_to_pixels_y(UIConfig.NUMPAD_BUTTON_PADY))
         
-        # Right side - Controls and buttons
-        controls_frame = Frame(numpad_container, bg='darkgray')
-        controls_frame.pack(side='right', fill='both', expand=True, padx=self.p_to_pixels_x(1))
+        # Control buttons frame (below numpad)
+        controls_frame = Frame(numpad_main_container, bg='darkgray')
+        controls_frame.pack(fill='x', pady=self.p_to_pixels_y(UIConfig.CONTROL_FRAME_PADY))
         
-        # Action buttons
+        # Action buttons in horizontal layout
         action_frame = Frame(controls_frame, bg='darkgray')
-        action_frame.pack(pady=self.p_to_pixels_y(0.7))
+        action_frame.pack()
         
-        submit_btn = Button(action_frame, text="Submit", width=12, height=2,
-                           font=('Arial', self.p_to_pixels_y(1.9), 'bold'), bg='lightgreen',
-                           command=self.submit_value)
-        submit_btn.pack(pady=self.p_to_pixels_y(0.3))
+        submit_btn = Button(action_frame, text="Submit", 
+                           width=UIConfig.CONTROL_BUTTON_WIDTH, height=UIConfig.CONTROL_BUTTON_HEIGHT,
+                           font=('Arial', self.p_to_pixels_y(UIConfig.CONTROL_BUTTON_FONT_SIZE), 'bold'), 
+                           bg='lightgreen', command=self.submit_value)
+        submit_btn.pack(side='left', padx=self.p_to_pixels_x(UIConfig.CONTROL_BUTTON_PADX))
         
-        cancel_btn = Button(action_frame, text="Cancel", width=12, height=2,
-                           font=('Arial', self.p_to_pixels_y(1.9), 'bold'), bg='lightcoral',
-                           command=self.cancel_input)
-        cancel_btn.pack(pady=self.p_to_pixels_y(0.3))
+        cancel_btn = Button(action_frame, text="Cancel", 
+                           width=UIConfig.CONTROL_BUTTON_WIDTH, height=UIConfig.CONTROL_BUTTON_HEIGHT,
+                           font=('Arial', self.p_to_pixels_y(UIConfig.CONTROL_BUTTON_FONT_SIZE), 'bold'), 
+                           bg='lightcoral', command=self.cancel_input)
+        cancel_btn.pack(side='left', padx=self.p_to_pixels_x(UIConfig.CONTROL_BUTTON_PADX))
         
-        # Reset All button with extra spacing to avoid accidental clicks
-        reset_btn = Button(controls_frame, text="Reset All", width=12, height=1,
-                          font=('Arial', self.p_to_pixels_y(1.9), 'bold'), bg='orange', fg='white',
-                          command=self.reset_all_settings)
-        reset_btn.pack(pady=(self.p_to_pixels_y(2.8), self.p_to_pixels_y(0.7)))
+        reset_btn = Button(action_frame, text="Reset All", 
+                          width=UIConfig.CONTROL_BUTTON_WIDTH, height=UIConfig.CONTROL_BUTTON_HEIGHT,
+                          font=('Arial', self.p_to_pixels_y(UIConfig.CONTROL_BUTTON_FONT_SIZE), 'bold'), 
+                          bg='orange', fg='white', command=self.reset_all_settings)
+        reset_btn.pack(side='left', padx=self.p_to_pixels_x(UIConfig.CONTROL_BUTTON_PADX))
         
-        # Status display
-        status_frame = Frame(controls_frame, bg='darkgray')
-        status_frame.pack(fill='x', pady=(self.p_to_pixels_y(2.1), 0))
+        # Status display (at bottom)
+        status_frame = Frame(numpad_main_container, bg='darkgray')
+        status_frame.pack(fill='x', pady=(self.p_to_pixels_y(UIConfig.STATUS_FRAME_PADY), 0))
         
         self.status_label = Label(status_frame, text="Status: Starting...", 
-                                 font=('Arial', self.p_to_pixels_y(2.5), 'bold'), bg='darkgray', fg='white')
+                                 font=('Arial', self.p_to_pixels_y(UIConfig.STATUS_FONT_SIZE), 'bold'), 
+                                 bg='darkgray', fg='white')
         self.status_label.pack()
-        
-        self.measurement_label = Label(status_frame, text="Width: --", 
-                                      font=('Arial', self.p_to_pixels_y(2.2)), bg='darkgray', fg='yellow')
-        self.measurement_label.pack()
     
     def validate_entry_length(self, event):
         """Limit entry box input to maximum 20 characters"""
@@ -803,13 +854,13 @@ class MeasureLinesIntegratedGUI:
             # Clear current selection
             self.current_entry = None
             self.current_value = ""
-            self.input_display.config(text="All settings reset to defaults!", bg='lightblue')
+            self.error_display_label.config(text="All settings reset to defaults!", fg='blue', bg='lightgray')
             
             # Reset colors after 2 seconds
             self.root.after(2000, self.reset_entry_colors)
             
         except Exception as e:
-            self.input_display.config(text=f"Reset failed: {str(e)}", bg='red')
+            self.error_display_label.config(text=f"Reset failed: {str(e)}", fg='red', bg='lightgray')
     
     def estimate_bg_from_row(self, frame):
         """Estimate background color from center row"""
@@ -969,13 +1020,11 @@ class MeasureLinesIntegratedGUI:
 
             dev = abs(self.avg_width_1s - self.initial_width)
             if dev <= self.config['WIDTH_THRESHOLD']:
-                status = f"OK Δ={dev:.1f}px"
+                status = f"OK Dev={dev:.1f}px"
                 col = (0,255,0)
-                status_color = 'green'
             else:
-                status = f"ALERT Δ={dev:.1f}px"
+                status = f"ALERT Dev={dev:.1f}px"
                 col = (0,0,255)
-                status_color = 'red'
 
             # Add text to video
             cv2.putText(vis, f"Init: {self.initial_width:.1f}px", (10,30),
@@ -987,17 +1036,6 @@ class MeasureLinesIntegratedGUI:
 
             # Display in canvas (use root.after for smooth updates)
             self.root.after_idle(lambda: self.display_frame(vis))
-            
-            # Update status labels (less frequently to reduce flicker)
-            if hasattr(self, 'last_status_update'):
-                if now - self.last_status_update > 0.5:  # Update every 500ms
-                    self.measurement_label.config(text=f"Width: {self.avg_width_1s:.1f}px ({status})", 
-                                                 fg=status_color)
-                    self.last_status_update = now
-            else:
-                self.last_status_update = now
-                self.measurement_label.config(text=f"Width: {self.avg_width_1s:.1f}px ({status})", 
-                                             fg=status_color)
             
             # Better frame rate control
             target_frame_time = 1.0 / max(1, self.config['TARGET_FPS'])  # Prevent division by zero
