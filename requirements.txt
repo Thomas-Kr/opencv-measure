@@ -1,4 +1,5 @@
 # OpenCV Measure Lines Project Requirements
+
 # Computer vision and image processing
 opencv-python>=4.8.0
 
@@ -8,5 +9,18 @@ numpy>=1.24.0
 # GUI and image display for tkinter integration
 Pillow>=9.0.0
 
-# Note: If you get "No module named tkinter" error:
+# System monitoring (CPU, memory, disk, temperature)
+psutil>=5.9.0
+
+# Note: If you get "No module named tkinter" error on Linux:
 # sudo apt-get install python3-tk
+
+# Standard library modules (no installation needed):
+# - tkinter (GUI framework)
+# - threading (multithreading support)
+# - json (JSON file handling)
+# - os (operating system interface)
+# - datetime (date and time handling)
+# - subprocess (system command execution)
+# - time (time-related functions)
+# - platform (platform identification)
