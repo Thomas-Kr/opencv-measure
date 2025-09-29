@@ -9,7 +9,7 @@ class UIConfig:
     SETTINGS_AREA_HEIGHT = 30  # Height of settings scroll area
     
     # Panel Widths (percentage of screen width)
-    RIGHT_PANEL_WIDTH = 32  # Width of right control panel
+    RIGHT_PANEL_WIDTH = 45  # Width of right control panel
     
     # Button Sizes
     # Tab buttons
@@ -18,12 +18,12 @@ class UIConfig:
     TAB_BUTTON_FONT_SIZE = 2.5
     
     # Numpad buttons
-    NUMPAD_BUTTON_WIDTH = 9
+    NUMPAD_BUTTON_WIDTH = 7
     NUMPAD_BUTTON_HEIGHT = 2
     NUMPAD_BUTTON_FONT_SIZE = 2.2
     
     # Control buttons (Submit, Cancel, Reset) - aligned with numpad
-    CONTROL_BUTTON_WIDTH = 9  # Same as numpad buttons (with shorter "Reset" text)
+    CONTROL_BUTTON_WIDTH = 7  # Same as numpad buttons (with shorter "Reset" text)
     CONTROL_BUTTON_HEIGHT = 2
     CONTROL_BUTTON_FONT_SIZE = 2.2
     
