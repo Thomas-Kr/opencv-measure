@@ -114,15 +114,15 @@ class MeasureLinesIntegratedGUI:
         left_top_frame = Frame(top_panel, bg='darkblue')
         left_top_frame.pack(side='left', padx=10, pady=5)
         
-        # RESTART button
-        self.restart_btn = Button(left_top_frame, text="RESTART", width=10, height=1,
-                                 font=('Arial', 12, 'bold'), bg='yellow', fg='black',
+        # RESTART button (1.5x bigger for touchscreen)
+        self.restart_btn = Button(left_top_frame, text="RESTART", width=15, height=2,
+                                 font=('Arial', 18, 'bold'), bg='yellow', fg='black',
                                  command=self.restart_measurement)
         self.restart_btn.pack(side='left', padx=5)
         
-        # POWEROFF button (next to RESTART)
-        self.poweroff_btn = Button(left_top_frame, text="POWEROFF", width=10, height=1,
-                                  font=('Arial', 12, 'bold'), bg='red', fg='white',
+        # POWEROFF button (next to RESTART, 1.5x bigger)
+        self.poweroff_btn = Button(left_top_frame, text="POWEROFF", width=15, height=2,
+                                  font=('Arial', 18, 'bold'), bg='red', fg='white',
                                   command=self.ask_poweroff_confirmation)
         self.poweroff_btn.pack(side='left', padx=5)
         
@@ -131,14 +131,14 @@ class MeasureLinesIntegratedGUI:
         self.confirm_frame.pack(side='left', padx=20, pady=5)
         
         self.confirm_label = Label(self.confirm_frame, text="Are you sure?", 
-                                  font=('Arial', 12, 'bold'), bg='darkblue', fg='yellow')
+                                  font=('Arial', 18, 'bold'), bg='darkblue', fg='yellow')
         
-        self.yes_btn = Button(self.confirm_frame, text="YES", width=6, height=1,
-                             font=('Arial', 11, 'bold'), bg='darkred', fg='white',
+        self.yes_btn = Button(self.confirm_frame, text="YES", width=9, height=2,
+                             font=('Arial', 16, 'bold'), bg='darkred', fg='white',
                              command=self.poweroff_confirmed)
         
-        self.no_btn = Button(self.confirm_frame, text="NO", width=6, height=1,
-                            font=('Arial', 11, 'bold'), bg='green', fg='white',
+        self.no_btn = Button(self.confirm_frame, text="NO", width=9, height=2,
+                            font=('Arial', 16, 'bold'), bg='green', fg='white',
                             command=self.poweroff_cancelled)
         
         # Initially hide confirmation elements
@@ -148,9 +148,9 @@ class MeasureLinesIntegratedGUI:
         right_top_frame = Frame(top_panel, bg='darkblue')
         right_top_frame.pack(side='right', padx=10, pady=5)
         
-        # Date and Time
+        # Date and Time (doubled font size)
         self.datetime_label = Label(right_top_frame, text="Loading...", 
-                                   font=('Arial', 14, 'bold'), bg='darkblue', fg='white')
+                                   font=('Arial', 28, 'bold'), bg='darkblue', fg='white')
         self.datetime_label.pack()
         
         # Start datetime update
@@ -168,25 +168,18 @@ class MeasureLinesIntegratedGUI:
         self.video_canvas = Canvas(video_frame, bg='black')
         self.video_canvas.pack(fill='both', expand=True)
         
-        # Right side - Controls (expanded width for better label visibility)
-        control_frame = Frame(content_frame, bg='darkgray', width=400)
-        control_frame.pack(side='right', fill='y', padx=5, pady=5)
-        control_frame.pack_propagate(False)
+        # Right side - Controls (exactly 50% of screen width)
+        control_frame = Frame(content_frame, bg='darkgray')
+        control_frame.pack(side='right', fill='both', expand=True, padx=2, pady=2)
         
-        # Reset All button at the top right
-        reset_top_btn = Button(control_frame, text="Reset All", width=12, height=1,
-                              font=('Arial', 12, 'bold'), bg='orange', fg='white',
-                              command=self.reset_all_settings)
-        reset_top_btn.pack(pady=(10, 20), anchor='ne')
-        
-        # Settings section
+        # Settings section (doubled font size)
         settings_label = Label(control_frame, text="Settings", 
-                              font=('Arial', 14, 'bold'), bg='darkgray')
+                              font=('Arial', 28, 'bold'), bg='darkgray')
         settings_label.pack(pady=(0, 10))
         
-        # Settings frame with scrolling (expanded height)
-        settings_canvas = Canvas(control_frame, bg='lightgray', height=250)
-        settings_canvas.pack(fill='x', pady=(0, 10))
+        # Settings frame with scrolling (optimized height to fit numpad)
+        settings_canvas = Canvas(control_frame, bg='lightgray', height=300)
+        settings_canvas.pack(fill='x', pady=(0, 5))
         
         settings_scroll_frame = Frame(settings_canvas, bg='lightgray')
         settings_canvas.create_window((0, 0), window=settings_scroll_frame, anchor='nw')
@@ -199,33 +192,10 @@ class MeasureLinesIntegratedGUI:
         settings_scroll_frame.update_idletasks()
         settings_canvas.configure(scrollregion=settings_canvas.bbox('all'))
         
-        # Current input display
-        self.input_display = Label(control_frame, text="Click field to edit", 
-                                  font=('Arial', 12), bg='lightblue', relief='sunken')
-        self.input_display.pack(fill='x', pady=(10, 5))
-        
-        # Numpad
+        # Numpad with integrated controls
         self.setup_numpad(control_frame)
         
-        # Status display
-        status_frame = Frame(control_frame, bg='darkgray')
-        status_frame.pack(fill='x', pady=(10, 0))
-        
-        self.status_label = Label(status_frame, text="Status: Starting...", 
-                                 font=('Arial', 12, 'bold'), bg='darkgray', fg='white')
-        self.status_label.pack()
-        
-        self.measurement_label = Label(status_frame, text="Width: --", 
-                                      font=('Arial', 11), bg='darkgray', fg='yellow')
-        self.measurement_label.pack()
-        
-        # Exit button
-        exit_btn = Button(control_frame, text="EXIT (ESC)", 
-                         command=self.exit_app,
-                         bg='red', fg='white', font=('Arial', 12, 'bold'))
-        exit_btn.pack(side='bottom', fill='x', pady=10)
-        
-        # Bind ESC key
+        # Bind ESC key for exit
         self.root.bind('<Escape>', lambda e: self.exit_app())
         
     def setup_config_entries(self, parent):
@@ -233,15 +203,15 @@ class MeasureLinesIntegratedGUI:
         for i, (key, value) in enumerate(self.config.items()):
             # Frame for each setting
             setting_frame = Frame(parent, bg='lightgray')
-            setting_frame.pack(fill='x', pady=2, padx=5)
+            setting_frame.pack(fill='x', pady=1, padx=3)
             
-            # Label (increased width and better font)
-            label = Label(setting_frame, text=f"{key}:", width=20, anchor='w',
-                         bg='lightgray', font=('Arial', 10))
+            # Label (optimized width and font size for balanced layout)
+            label = Label(setting_frame, text=f"{key}:", width=25, anchor='w',
+                         bg='lightgray', font=('Arial', 16))
             label.pack(side='left')
             
-            # Entry (increased width, initially disabled but with default values)
-            entry = Entry(setting_frame, font=('Arial', 10), width=12)
+            # Entry (optimized width and font size for balanced layout)
+            entry = Entry(setting_frame, font=('Arial', 16), width=18)
             entry.insert(0, str(value))  # Insert value while enabled
             entry.config(state='disabled')  # Then disable
             entry.bind('<Button-1>', lambda e, k=key: self.select_entry(k))
@@ -250,9 +220,14 @@ class MeasureLinesIntegratedGUI:
             self.entries[key] = entry
     
     def setup_numpad(self, parent):
-        """Create compact numpad"""
-        numpad_frame = Frame(parent, bg='darkgray')
-        numpad_frame.pack(fill='x', pady=10)
+        """Create compact numpad with controls on the right"""
+        # Main horizontal container for numpad and controls
+        numpad_container = Frame(parent, bg='darkgray')
+        numpad_container.pack(fill='x', pady=10)
+        
+        # Left side - Numpad buttons
+        numpad_frame = Frame(numpad_container, bg='darkgray')
+        numpad_frame.pack(side='left', padx=5)
         
         # Number buttons (larger for touch)
         buttons = [
@@ -268,28 +243,55 @@ class MeasureLinesIntegratedGUI:
             
             for btn_text in row:
                 if btn_text == 'C':
-                    btn = Button(button_row, text=btn_text, width=6, height=2,
-                                font=('Arial', 14, 'bold'), bg='orange',
+                    btn = Button(button_row, text=btn_text, width=7, height=2,
+                                font=('Arial', 16, 'bold'), bg='orange',
                                 command=self.clear_input)
                 else:
-                    btn = Button(button_row, text=btn_text, width=6, height=2,
-                                font=('Arial', 14, 'bold'), bg='lightblue',
+                    btn = Button(button_row, text=btn_text, width=7, height=2,
+                                font=('Arial', 16, 'bold'), bg='lightblue',
                                 command=lambda t=btn_text: self.numpad_input(t))
-                btn.pack(side='left', padx=2, pady=2)
+                btn.pack(side='left', padx=1, pady=1)
         
-        # Action buttons (larger for touch)
-        action_frame = Frame(numpad_frame, bg='darkgray')
-        action_frame.pack(pady=8)
+        # Right side - Controls and buttons
+        controls_frame = Frame(numpad_container, bg='darkgray')
+        controls_frame.pack(side='right', fill='both', expand=True, padx=10)
         
-        submit_btn = Button(action_frame, text="Submit", width=10, height=2,
-                           font=('Arial', 12, 'bold'), bg='lightgreen',
+        # Current input display
+        self.input_display = Label(controls_frame, text="Click field to edit", 
+                                  font=('Arial', 18), bg='lightblue', relief='sunken')
+        self.input_display.pack(fill='x', pady=(0, 10))
+        
+        # Action buttons
+        action_frame = Frame(controls_frame, bg='darkgray')
+        action_frame.pack(pady=5)
+        
+        submit_btn = Button(action_frame, text="Submit", width=12, height=2,
+                           font=('Arial', 14, 'bold'), bg='lightgreen',
                            command=self.submit_value)
-        submit_btn.pack(side='left', padx=3)
+        submit_btn.pack(pady=2)
         
-        cancel_btn = Button(action_frame, text="Cancel", width=10, height=2,
-                           font=('Arial', 12, 'bold'), bg='lightcoral',
+        cancel_btn = Button(action_frame, text="Cancel", width=12, height=2,
+                           font=('Arial', 14, 'bold'), bg='lightcoral',
                            command=self.cancel_input)
-        cancel_btn.pack(side='left', padx=3)
+        cancel_btn.pack(pady=2)
+        
+        # Reset All button with extra spacing to avoid accidental clicks
+        reset_btn = Button(controls_frame, text="Reset All", width=12, height=1,
+                          font=('Arial', 14, 'bold'), bg='orange', fg='white',
+                          command=self.reset_all_settings)
+        reset_btn.pack(pady=(20, 5))
+        
+        # Status display
+        status_frame = Frame(controls_frame, bg='darkgray')
+        status_frame.pack(fill='x', pady=(15, 0))
+        
+        self.status_label = Label(status_frame, text="Status: Starting...", 
+                                 font=('Arial', 18, 'bold'), bg='darkgray', fg='white')
+        self.status_label.pack()
+        
+        self.measurement_label = Label(status_frame, text="Width: --", 
+                                      font=('Arial', 16), bg='darkgray', fg='yellow')
+        self.measurement_label.pack()
     
     def update_datetime(self):
         """Update datetime display every second"""
