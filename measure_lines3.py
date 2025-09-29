@@ -17,7 +17,6 @@ class MeasureLinesIntegratedGUI:
         
         # Default configuration values (keep backup for reset)
         self.default_config = {
-            'VIDEO_SOURCE': 0,
             'NUM_ROWS': 5,
             'COLOR_THRESH': 220.0,
             'TARGET_FPS': 20,
@@ -34,11 +33,11 @@ class MeasureLinesIntegratedGUI:
         self.root.title("OpenCV Measure Lines - Live Control")
         
         # Get screen dimensions for proper fullscreen on X server
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
+        self.screen_width = self.root.winfo_screenwidth()
+        self.screen_height = self.root.winfo_screenheight()
         
         # Set fullscreen properly for X server
-        self.root.geometry(f"{screen_width}x{screen_height}+0+0")
+        self.root.geometry(f"{self.screen_width}x{self.screen_height}+0+0")
         self.root.overrideredirect(True)  # Remove window decorations
         self.root.configure(bg='black')
         self.root.focus_set()  # Ensure focus
@@ -55,6 +54,9 @@ class MeasureLinesIntegratedGUI:
         self.current_entry = None
         self.current_value = ""
         
+        # Initialize entries dictionary
+        self.entries = {}
+        
         # Video display variables
         self.video_canvas = None
         self.video_label = None
@@ -70,6 +72,14 @@ class MeasureLinesIntegratedGUI:
         
         self.setup_gui()
         self.start_measurement()
+    
+    def p_to_pixels_x(self, percentage):
+        """Convert percentage to pixels for horizontal (width) dimension"""
+        return int(self.screen_width * percentage / 100)
+    
+    def p_to_pixels_y(self, percentage):
+        """Convert percentage to pixels for vertical (height) dimension"""
+        return int(self.screen_height * percentage / 100)
     
     def load_settings(self):
         """Load settings from JSON file or return defaults"""
@@ -106,39 +116,39 @@ class MeasureLinesIntegratedGUI:
         main_frame.pack(fill='both', expand=True)
         
         # Top panel with controls and datetime
-        top_panel = Frame(main_frame, bg='darkblue', height=50)
-        top_panel.pack(fill='x', pady=(0, 5))
+        top_panel = Frame(main_frame, bg='darkblue', height=self.p_to_pixels_y(7))
+        top_panel.pack(fill='x', pady=(0, self.p_to_pixels_y(0.7)))
         top_panel.pack_propagate(False)
         
         # Left side of top panel - Control buttons
         left_top_frame = Frame(top_panel, bg='darkblue')
-        left_top_frame.pack(side='left', padx=10, pady=5)
+        left_top_frame.pack(side='left', padx=self.p_to_pixels_x(1), pady=self.p_to_pixels_y(0.7))
         
         # RESTART button (1.5x bigger for touchscreen)
         self.restart_btn = Button(left_top_frame, text="RESTART", width=15, height=2,
-                                 font=('Arial', 18, 'bold'), bg='yellow', fg='black',
+                                 font=('Arial', self.p_to_pixels_y(2.5), 'bold'), bg='yellow', fg='black',
                                  command=self.restart_measurement)
-        self.restart_btn.pack(side='left', padx=5)
+        self.restart_btn.pack(side='left', padx=self.p_to_pixels_x(0.5))
         
         # POWEROFF button (next to RESTART, 1.5x bigger)
         self.poweroff_btn = Button(left_top_frame, text="POWEROFF", width=15, height=2,
-                                  font=('Arial', 18, 'bold'), bg='red', fg='white',
+                                  font=('Arial', self.p_to_pixels_y(2.5), 'bold'), bg='red', fg='white',
                                   command=self.ask_poweroff_confirmation)
-        self.poweroff_btn.pack(side='left', padx=5)
+        self.poweroff_btn.pack(side='left', padx=self.p_to_pixels_x(0.5))
         
         # Center - Confirmation area (initially hidden)
         self.confirm_frame = Frame(top_panel, bg='darkblue')
-        self.confirm_frame.pack(side='left', padx=20, pady=5)
+        self.confirm_frame.pack(side='left', padx=self.p_to_pixels_x(2), pady=self.p_to_pixels_y(0.7))
         
         self.confirm_label = Label(self.confirm_frame, text="Are you sure?", 
-                                  font=('Arial', 18, 'bold'), bg='darkblue', fg='yellow')
+                                  font=('Arial', self.p_to_pixels_y(2.5), 'bold'), bg='darkblue', fg='yellow')
         
         self.yes_btn = Button(self.confirm_frame, text="YES", width=9, height=2,
-                             font=('Arial', 16, 'bold'), bg='darkred', fg='white',
+                             font=('Arial', self.p_to_pixels_y(2.2), 'bold'), bg='darkred', fg='white',
                              command=self.poweroff_confirmed)
         
         self.no_btn = Button(self.confirm_frame, text="NO", width=9, height=2,
-                            font=('Arial', 16, 'bold'), bg='green', fg='white',
+                            font=('Arial', self.p_to_pixels_y(2.2), 'bold'), bg='green', fg='white',
                             command=self.poweroff_cancelled)
         
         # Initially hide confirmation elements
@@ -146,11 +156,11 @@ class MeasureLinesIntegratedGUI:
         
         # Right side of top panel - Date/Time
         right_top_frame = Frame(top_panel, bg='darkblue')
-        right_top_frame.pack(side='right', padx=10, pady=5)
+        right_top_frame.pack(side='right', padx=self.p_to_pixels_x(1), pady=self.p_to_pixels_y(0.7))
         
         # Date and Time (doubled font size)
         self.datetime_label = Label(right_top_frame, text="Loading...", 
-                                   font=('Arial', 28, 'bold'), bg='darkblue', fg='white')
+                                   font=('Arial', self.p_to_pixels_y(3.9), 'bold'), bg='darkblue', fg='white')
         self.datetime_label.pack()
         
         # Start datetime update
@@ -170,16 +180,16 @@ class MeasureLinesIntegratedGUI:
         
         # Right side - Controls (exactly 50% of screen width)
         control_frame = Frame(content_frame, bg='darkgray')
-        control_frame.pack(side='right', fill='both', expand=True, padx=2, pady=2)
+        control_frame.pack(side='right', fill='both', expand=True, padx=self.p_to_pixels_x(0.2), pady=self.p_to_pixels_y(0.3))
         
         # Settings section (doubled font size)
         settings_label = Label(control_frame, text="Settings", 
-                              font=('Arial', 28, 'bold'), bg='darkgray')
-        settings_label.pack(pady=(0, 10))
+                              font=('Arial', self.p_to_pixels_y(3.9), 'bold'), bg='darkgray')
+        settings_label.pack(pady=(0, self.p_to_pixels_y(1.4)))
         
         # Settings frame with scrolling (optimized height to fit numpad)
-        settings_canvas = Canvas(control_frame, bg='lightgray', height=300)
-        settings_canvas.pack(fill='x', pady=(0, 5))
+        settings_canvas = Canvas(control_frame, bg='lightgray', height=self.p_to_pixels_y(42))
+        settings_canvas.pack(fill='x', pady=(0, self.p_to_pixels_y(0.7)))
         
         settings_scroll_frame = Frame(settings_canvas, bg='lightgray')
         settings_canvas.create_window((0, 0), window=settings_scroll_frame, anchor='nw')
@@ -200,34 +210,99 @@ class MeasureLinesIntegratedGUI:
         
     def setup_config_entries(self, parent):
         """Create entry boxes for configuration values"""
+        # Main horizontal container
+        main_container = Frame(parent, bg='lightgray')
+        main_container.pack(fill='both', expand=True)
+        
+        # Left side - Entry boxes
+        entries_frame = Frame(main_container, bg='lightgray')
+        entries_frame.pack(side='left', fill='both', padx=self.p_to_pixels_x(0.3))
+        
         for i, (key, value) in enumerate(self.config.items()):
             # Frame for each setting
-            setting_frame = Frame(parent, bg='lightgray')
-            setting_frame.pack(fill='x', pady=1, padx=3)
+            setting_frame = Frame(entries_frame, bg='lightgray')
+            setting_frame.pack(fill='x')
             
             # Label (optimized width and font size for balanced layout)
             label = Label(setting_frame, text=f"{key}:", width=25, anchor='w',
-                         bg='lightgray', font=('Arial', 16))
+                         bg='lightgray', font=('Arial', self.p_to_pixels_y(2.2)))
             label.pack(side='left')
             
-            # Entry (optimized width and font size for balanced layout)
-            entry = Entry(setting_frame, font=('Arial', 16), width=18)
+            # Entry (optimized width and font size for balanced layout) with character limit
+            entry = Entry(setting_frame, font=('Arial', self.p_to_pixels_y(2.2)), width=18)
             entry.insert(0, str(value))  # Insert value while enabled
             entry.config(state='disabled')  # Then disable
             entry.bind('<Button-1>', lambda e, k=key: self.select_entry(k))
+            # Add character limit validation
+            entry.bind('<KeyPress>', lambda e: self.validate_entry_length(e))
             entry.pack(side='right')
             
             self.entries[key] = entry
+        
+        # Error message display (below entry boxes)
+        self.error_display_label = Label(entries_frame, text="", 
+                                         font=('Arial', self.p_to_pixels_y(1.8)), bg='lightgray', fg='red', 
+                                         wraplength=self.p_to_pixels_x(30))
+        self.error_display_label.pack(fill='x', pady=(self.p_to_pixels_y(1), 0))
+        
+        # Right side - System information
+        self.setup_system_info(main_container)
+    
+    def setup_system_info(self, parent):
+        """Create system information panel"""
+        # System info frame with fixed width (smaller)
+        system_frame = Frame(parent, bg='darkslategray', width=self.p_to_pixels_x(20))
+        system_frame.pack(side='right', fill='y', padx=(self.p_to_pixels_x(1), 0))
+        system_frame.pack_propagate(False)  # Prevent frame from shrinking/expanding
+        
+        # Title
+        title_label = Label(system_frame, text="System Info", 
+                           font=('Arial', self.p_to_pixels_y(2.0), 'bold'), 
+                           bg='darkslategray', fg='white')
+        title_label.pack(pady=(self.p_to_pixels_y(0.5), self.p_to_pixels_y(0.3)))
+        
+        # CPU Temperature
+        self.cpu_temp_label = Label(system_frame, text="CPU Temp: --°C", 
+                                   font=('Arial', self.p_to_pixels_y(1.4)), 
+                                   bg='darkslategray', fg='lightgreen')
+        self.cpu_temp_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
+        
+        # CPU Usage
+        self.cpu_usage_label = Label(system_frame, text="CPU Usage: --%", 
+                                    font=('Arial', self.p_to_pixels_y(1.4)), 
+                                    bg='darkslategray', fg='lightblue')
+        self.cpu_usage_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
+        
+        # Memory Usage
+        self.memory_label = Label(system_frame, text="Memory: --% (--/-- GB)", 
+                                 font=('Arial', self.p_to_pixels_y(1.4)), 
+                                 bg='darkslategray', fg='lightyellow')
+        self.memory_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
+        
+        # Disk Usage
+        self.disk_label = Label(system_frame, text="Disk: --% (-- GB free)", 
+                               font=('Arial', self.p_to_pixels_y(1.4)), 
+                               bg='darkslategray', fg='lightcoral')
+        self.disk_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
+        
+        # Uptime (time since last reboot)
+        self.uptime_label = Label(system_frame, text="Uptime (since boot): --", 
+                                 font=('Arial', self.p_to_pixels_y(1.4)), 
+                                 bg='darkslategray', fg='lightgray')
+        self.uptime_label.pack(anchor='w', padx=self.p_to_pixels_x(0.5))
+        
+        # Start system monitoring
+        self.update_system_info()
     
     def setup_numpad(self, parent):
         """Create compact numpad with controls on the right"""
         # Main horizontal container for numpad and controls
         numpad_container = Frame(parent, bg='darkgray')
-        numpad_container.pack(fill='x', pady=10)
+        numpad_container.pack(fill='x', pady=self.p_to_pixels_y(1.4))
         
         # Left side - Numpad buttons
         numpad_frame = Frame(numpad_container, bg='darkgray')
-        numpad_frame.pack(side='left', padx=5)
+        numpad_frame.pack(side='left', padx=self.p_to_pixels_x(0.5))
         
         # Number buttons (larger for touch)
         buttons = [
@@ -244,54 +319,213 @@ class MeasureLinesIntegratedGUI:
             for btn_text in row:
                 if btn_text == 'C':
                     btn = Button(button_row, text=btn_text, width=7, height=2,
-                                font=('Arial', 16, 'bold'), bg='orange',
+                                font=('Arial', self.p_to_pixels_y(2.2), 'bold'), bg='orange',
                                 command=self.clear_input)
                 else:
                     btn = Button(button_row, text=btn_text, width=7, height=2,
-                                font=('Arial', 16, 'bold'), bg='lightblue',
+                                font=('Arial', self.p_to_pixels_y(2.2), 'bold'), bg='lightblue',
                                 command=lambda t=btn_text: self.numpad_input(t))
-                btn.pack(side='left', padx=1, pady=1)
+                btn.pack(side='left', padx=self.p_to_pixels_x(0.1), pady=self.p_to_pixels_y(0.14))
         
         # Right side - Controls and buttons
         controls_frame = Frame(numpad_container, bg='darkgray')
-        controls_frame.pack(side='right', fill='both', expand=True, padx=10)
-        
-        # Current input display
-        self.input_display = Label(controls_frame, text="Click field to edit", 
-                                  font=('Arial', 18), bg='lightblue', relief='sunken')
-        self.input_display.pack(fill='x', pady=(0, 10))
+        controls_frame.pack(side='right', fill='both', expand=True, padx=self.p_to_pixels_x(1))
         
         # Action buttons
         action_frame = Frame(controls_frame, bg='darkgray')
-        action_frame.pack(pady=5)
+        action_frame.pack(pady=self.p_to_pixels_y(0.7))
         
         submit_btn = Button(action_frame, text="Submit", width=12, height=2,
-                           font=('Arial', 14, 'bold'), bg='lightgreen',
+                           font=('Arial', self.p_to_pixels_y(1.9), 'bold'), bg='lightgreen',
                            command=self.submit_value)
-        submit_btn.pack(pady=2)
+        submit_btn.pack(pady=self.p_to_pixels_y(0.3))
         
         cancel_btn = Button(action_frame, text="Cancel", width=12, height=2,
-                           font=('Arial', 14, 'bold'), bg='lightcoral',
+                           font=('Arial', self.p_to_pixels_y(1.9), 'bold'), bg='lightcoral',
                            command=self.cancel_input)
-        cancel_btn.pack(pady=2)
+        cancel_btn.pack(pady=self.p_to_pixels_y(0.3))
         
         # Reset All button with extra spacing to avoid accidental clicks
         reset_btn = Button(controls_frame, text="Reset All", width=12, height=1,
-                          font=('Arial', 14, 'bold'), bg='orange', fg='white',
+                          font=('Arial', self.p_to_pixels_y(1.9), 'bold'), bg='orange', fg='white',
                           command=self.reset_all_settings)
-        reset_btn.pack(pady=(20, 5))
+        reset_btn.pack(pady=(self.p_to_pixels_y(2.8), self.p_to_pixels_y(0.7)))
         
         # Status display
         status_frame = Frame(controls_frame, bg='darkgray')
-        status_frame.pack(fill='x', pady=(15, 0))
+        status_frame.pack(fill='x', pady=(self.p_to_pixels_y(2.1), 0))
         
         self.status_label = Label(status_frame, text="Status: Starting...", 
-                                 font=('Arial', 18, 'bold'), bg='darkgray', fg='white')
+                                 font=('Arial', self.p_to_pixels_y(2.5), 'bold'), bg='darkgray', fg='white')
         self.status_label.pack()
         
         self.measurement_label = Label(status_frame, text="Width: --", 
-                                      font=('Arial', 16), bg='darkgray', fg='yellow')
+                                      font=('Arial', self.p_to_pixels_y(2.2)), bg='darkgray', fg='yellow')
         self.measurement_label.pack()
+    
+    def validate_entry_length(self, event):
+        """Limit entry box input to maximum 20 characters"""
+        entry = event.widget
+        current_text = entry.get()
+        if len(current_text) >= 20:
+            return "break"  # Prevent further input
+    
+    def show_error_message(self, key, message):
+        """Show error message in status area"""
+        self.error_display_label.config(text=f"{key}: {message}")
+    
+    def clear_error_message(self, key):
+        """Clear error message"""
+        self.error_display_label.config(text="")
+    
+    def clear_all_error_messages(self):
+        """Clear all error messages"""
+        self.error_display_label.config(text="")
+    
+    def get_system_info(self):
+        """Get current system information"""
+        try:
+            import psutil
+            import platform
+            
+            # CPU temperature - focus on Linux, simple fallback for Windows
+            cpu_temp = "N/A"
+            try:
+                if platform.system() == "Linux":
+                    # Method 1: Try psutil sensors (most reliable on Linux)
+                    if hasattr(psutil, 'sensors_temperatures'):
+                        temps = psutil.sensors_temperatures()
+                        if temps:
+                            # Try common Linux temperature sensors
+                            for sensor_name in ['coretemp', 'k10temp', 'cpu_thermal', 'acpi']:
+                                if sensor_name in temps and temps[sensor_name]:
+                                    cpu_temp = f"{temps[sensor_name][0].current:.1f}"
+                                    break
+                            
+                            # If no common sensor found, use first available
+                            if cpu_temp == "N/A":
+                                for sensor_list in temps.values():
+                                    if sensor_list and hasattr(sensor_list[0], 'current'):
+                                        cpu_temp = f"{sensor_list[0].current:.1f}"
+                                        break
+                    
+                    # Method 2: Direct file reading (fallback for Linux)
+                    if cpu_temp == "N/A":
+                        import os
+                        thermal_zones = [f"/sys/class/thermal/thermal_zone{i}/temp" for i in range(10)]
+                        for zone_file in thermal_zones:
+                            if os.path.exists(zone_file):
+                                try:
+                                    with open(zone_file, 'r') as f:
+                                        temp_raw = int(f.read().strip())
+                                        # Usually in millidegrees Celsius
+                                        if temp_raw > 1000:
+                                            cpu_temp = f"{temp_raw / 1000.0:.1f}"
+                                            break
+                                except:
+                                    continue
+                else:
+                    # For Windows, just show N/A as requested
+                    cpu_temp = "N/A"
+                
+            except Exception as e:
+                print(f"Temperature detection error: {e}")
+                cpu_temp = "N/A"
+            
+            # CPU usage
+            cpu_usage = psutil.cpu_percent(interval=None)
+            
+            # Memory usage
+            memory = psutil.virtual_memory()
+            memory_percent = memory.percent
+            memory_used = memory.used / (1024**3)  # GB
+            memory_total = memory.total / (1024**3)  # GB
+            
+            # Disk usage (use '/' for Linux, 'C:' for Windows)
+            disk_path = '/' if platform.system() != "Windows" else 'C:\\'
+            disk = psutil.disk_usage(disk_path)
+            disk_percent = (disk.used / disk.total) * 100
+            disk_free = disk.free / (1024**3)  # GB
+            
+            # Uptime
+            boot_time = psutil.boot_time()
+            uptime_seconds = time.time() - boot_time
+            uptime_hours = int(uptime_seconds // 3600)
+            uptime_minutes = int((uptime_seconds % 3600) // 60)
+            
+            return {
+                'cpu_temp': cpu_temp,
+                'cpu_usage': cpu_usage,
+                'memory_percent': memory_percent,
+                'memory_used': memory_used,
+                'memory_total': memory_total,
+                'disk_percent': disk_percent,
+                'disk_free': disk_free,
+                'uptime_hours': uptime_hours,
+                'uptime_minutes': uptime_minutes
+            }
+        except ImportError:
+            # psutil not available
+            return None
+        except Exception as e:
+            print(f"Error getting system info: {e}")
+            return None
+    
+    def update_system_info(self):
+        """Update system information display"""
+        try:
+            info = self.get_system_info()
+            if info:
+                # Update labels with current info
+                self.cpu_temp_label.config(text=f"CPU Temp: {info['cpu_temp']}°C")
+                self.cpu_usage_label.config(text=f"CPU Usage: {info['cpu_usage']:.1f}%")
+                self.memory_label.config(text=f"Memory: {info['memory_percent']:.1f}% ({info['memory_used']:.1f}/{info['memory_total']:.1f} GB)")
+                self.disk_label.config(text=f"Disk: {info['disk_percent']:.1f}% ({info['disk_free']:.1f} GB free)")
+                self.uptime_label.config(text=f"Uptime (since boot): {info['uptime_hours']}h {info['uptime_minutes']}m")
+                
+                # Color coding for CPU temperature (only if it's a number)
+                if info['cpu_temp'] not in ["--", "N/A", "N/A (Windows)"]:
+                    try:
+                        temp_val = float(info['cpu_temp'])
+                        if temp_val > 80:
+                            self.cpu_temp_label.config(fg='red')
+                        elif temp_val > 60:
+                            self.cpu_temp_label.config(fg='orange')
+                        else:
+                            self.cpu_temp_label.config(fg='lightgreen')
+                    except ValueError:
+                        self.cpu_temp_label.config(fg='white')
+                else:
+                    self.cpu_temp_label.config(fg='white')
+                    
+                # Color coding for CPU usage
+                if info['cpu_usage'] > 90:
+                    self.cpu_usage_label.config(fg='red')
+                elif info['cpu_usage'] > 70:
+                    self.cpu_usage_label.config(fg='orange')
+                else:
+                    self.cpu_usage_label.config(fg='lightgreen')
+                    
+                # Color coding for memory usage
+                if info['memory_percent'] > 90:
+                    self.memory_label.config(fg='red')
+                elif info['memory_percent'] > 80:
+                    self.memory_label.config(fg='orange')
+                else:
+                    self.memory_label.config(fg='lightgreen')
+                    
+            else:
+                # psutil not available, show alternative info
+                self.cpu_temp_label.config(text="CPU Temp: N/A (install psutil)")
+                self.cpu_usage_label.config(text="CPU Usage: N/A")
+                self.memory_label.config(text="Memory: N/A")
+                self.disk_label.config(text="Disk: N/A")
+                self.uptime_label.config(text="Uptime (since boot): N/A")
+        except Exception as e:
+            print(f"Error updating system info: {e}")
+        
+        # Schedule next update (every 5 seconds)
+        self.root.after(5000, self.update_system_info)
     
     def update_datetime(self):
         """Update datetime display every second"""
@@ -353,11 +587,6 @@ class MeasureLinesIntegratedGUI:
             # Start measurement again if it was running
             if was_running:
                 self.start_measurement()
-            
-            # Show feedback
-            if hasattr(self, 'input_display'):
-                self.input_display.config(text="Measurement restarted! New background calculated.", bg='lightgreen')
-                self.root.after(3000, lambda: self.input_display.config(text="Click field to edit", bg='lightblue'))
                 
         except Exception as e:
             print(f"Error restarting measurement: {e}")
@@ -415,39 +644,62 @@ class MeasureLinesIntegratedGUI:
     def select_entry(self, key):
         """Select an entry field for editing"""
         self.current_entry = key
-        self.current_value = ""
-        self.input_display.config(text=f"Editing {key} - use numpad below", bg='yellow')
+        
+        # Clear any previous error messages
+        self.clear_all_error_messages()
         
         # Highlight and activate selected entry
         for k, entry in self.entries.items():
             if k == key:
                 entry.config(bg='yellow', state='normal')
-                entry.delete(0, tk.END)  # Clear for new input
+                # Initialize current_value with what's already in the field
+                self.current_value = entry.get()
                 entry.focus_set()  # Focus on the entry
             else:
                 entry.config(bg='white', state='disabled')
     
     def numpad_input(self, digit):
-        """Handle numpad input - write directly to entry box"""
+        """Handle numpad input - append to existing text in entry box"""
         if self.current_entry is None:
             return
             
-        self.current_value += digit
-        # Write directly to the selected entry box
         entry = self.entries[self.current_entry]
+        # Get current text from entry box
+        current_text = entry.get()
+        
+        # Check character limit (10 characters max)
+        if len(current_text) >= 10:
+            self.show_error_message(self.current_entry, "Maximum 10 characters allowed")
+            return
+            
+        # Append new digit
+        new_text = current_text + digit
+        
+        # Update entry box
         entry.delete(0, tk.END)
-        entry.insert(0, self.current_value)
+        entry.insert(0, new_text)
+        
+        # Update current_value to match what's in the box
+        self.current_value = new_text
     
     def clear_input(self):
-        """Clear current input in entry box"""
+        """Clear current input in entry box completely"""
         self.current_value = ""
         if self.current_entry:
             entry = self.entries[self.current_entry]
             entry.delete(0, tk.END)
+            # Leave field empty instead of restoring original value
     
     def submit_value(self):
         """Submit the entered value and apply immediately with validation"""
-        if self.current_entry is None or self.current_value == "":
+        if self.current_entry is None:
+            return
+            
+        # Get value from entry box instead of current_value
+        entry = self.entries[self.current_entry]
+        input_value = entry.get().strip()
+        
+        if input_value == "":
             return
             
         try:
@@ -455,38 +707,28 @@ class MeasureLinesIntegratedGUI:
             old_value = self.config[self.current_entry]
             
             # Convert to appropriate type with validation
-            if self.current_entry == 'VIDEO_SOURCE':
-                try:
-                    value = int(self.current_value)
-                    if value < 0:
-                        raise ValueError("Video source must be >= 0")
-                except ValueError:
-                    # Try as string (file path)
-                    value = self.current_value
-                    if not value.strip():
-                        raise ValueError("Video source cannot be empty")
-            elif self.current_entry == 'NUM_ROWS':
-                value = int(self.current_value)
-                if value < 1 or value > 20:
-                    raise ValueError("NUM_ROWS must be between 1 and 20")
+            if self.current_entry == 'NUM_ROWS':
+                value = int(input_value)
+                if value < 1 or value > 100:
+                    raise ValueError("NUM_ROWS must be between 1 and 100")
             elif self.current_entry == 'TARGET_FPS':
-                value = int(self.current_value)
+                value = int(input_value)
                 if value < 1 or value > 60:
                     raise ValueError("TARGET_FPS must be between 1 and 60")
             elif self.current_entry in ['TOP_MARGIN_RATIO', 'BOTTOM_MARGIN_RATIO']:
-                value = float(self.current_value)
+                value = float(input_value)
                 if value < 0.0 or value > 0.9:
                     raise ValueError("Margin ratios must be between 0.0 and 0.9")
             elif self.current_entry == 'COLOR_THRESH':
-                value = float(self.current_value)
+                value = float(input_value)
                 if value < 1.0 or value > 500.0:
                     raise ValueError("COLOR_THRESH must be between 1.0 and 500.0")
             elif self.current_entry == 'WIDTH_THRESHOLD':
-                value = float(self.current_value)
+                value = float(input_value)
                 if value < 0.1 or value > 100.0:
                     raise ValueError("WIDTH_THRESHOLD must be between 0.1 and 100.0")
             else:
-                value = float(self.current_value)
+                value = float(input_value)
             
             # Additional validation: check if margins make sense together
             if self.current_entry in ['TOP_MARGIN_RATIO', 'BOTTOM_MARGIN_RATIO']:
@@ -508,16 +750,15 @@ class MeasureLinesIntegratedGUI:
             # Clear selection
             self.current_entry = None
             self.current_value = ""
-            self.input_display.config(text="Value updated & saved! Click field to edit another", bg='lightgreen')
             
             # Reset entry color after 1 second
             self.root.after(1000, self.reset_entry_colors)
             
         except ValueError as e:
-            # Show error and restore old value
-            self.input_display.config(text=f"Error: {str(e)}", bg='red')
-            # Restore the old value in the entry box
+            # Show error message under the field
             if self.current_entry:
+                self.show_error_message(self.current_entry, str(e))
+                # Restore the old value in the entry box
                 self.entries[self.current_entry].delete(0, tk.END)
                 self.entries[self.current_entry].insert(0, str(self.config[self.current_entry]))
                 self.entries[self.current_entry].config(bg='lightcoral')
@@ -532,7 +773,7 @@ class MeasureLinesIntegratedGUI:
         """Reset entry box colors and states"""
         for entry in self.entries.values():
             entry.config(bg='white', state='disabled')  # All fields disabled by default
-        self.input_display.config(text="Click field to edit", bg='lightblue')
+        self.clear_all_error_messages()  # Clear all error messages
     
     def cancel_input(self):
         """Cancel current input"""
@@ -545,7 +786,6 @@ class MeasureLinesIntegratedGUI:
             
         self.current_entry = None
         self.current_value = ""
-        self.input_display.config(text="Click field to edit", bg='lightblue')
     
     def reset_all_settings(self):
         """Reset all settings to default values"""
@@ -602,7 +842,7 @@ class MeasureLinesIntegratedGUI:
     
     def run_measurement(self):
         """Run measurement with live video display in canvas"""
-        self.cap = cv2.VideoCapture(self.config['VIDEO_SOURCE'])
+        self.cap = cv2.VideoCapture(0)  # Fixed to camera 0
         ret, first = self.cap.read()
         if not ret:
             self.status_label.config(text="Status: Failed to open video", fg='red')
