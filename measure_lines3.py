@@ -11,6 +11,8 @@ import datetime
 import subprocess
 from ui_config import UIConfig
 
+SOURCE = 'sources/test3.mp4'
+
 class MeasureLinesIntegratedGUI:
     def __init__(self):
         # Settings file path
@@ -893,7 +895,7 @@ class MeasureLinesIntegratedGUI:
     
     def run_measurement(self):
         """Run measurement with live video display in canvas"""
-        self.cap = cv2.VideoCapture(0)  # Fixed to camera 0
+        self.cap = cv2.VideoCapture(SOURCE)  # Fixed to camera 0
         ret, first = self.cap.read()
         if not ret:
             self.status_label.config(text="Status: Failed to open video", fg='red')
